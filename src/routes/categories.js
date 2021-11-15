@@ -1,7 +1,9 @@
 // Third-party packages.
 const express = require('express');
-const { getAll, create, getOne, updateOne, deleteOne } = require('../controllers/categories');
 const router = express.Router();
+
+// Local files imports.
+const { getAll, create, getOne, updateOne, deleteOne } = require('../controllers/categories');
 
 // Routes.
 router.route('/').get(getAll).post(create);

@@ -3,6 +3,7 @@ const path = require('path');
 
 // Local files imports.
 const Product = require('../models/Product');
+const Comment = require('../models/Comment');
 const asyncHandler = require('../utils/middleware/mw_asyncHandler');
 const ApiError = require('../utils/classes/APIError');
 const { messages, statusCodes } = require('../configs/');
@@ -20,9 +21,14 @@ const getAll = asyncHandler(async (request, response, next) => {
 
     const products = await Product.find(query);
 
-    const topProducts = await Product.find({}, null, { limit: 5, sort: { rating: -1 } });
+    const topProducts = await Product.find({}, null, {
+        limit: 5,
+        sort: { rating: -1 },
+    });
 
-    response.status(statusCodes.OK).json({ success: true, data: { products, topProducts } });
+    response
+        .status(statusCodes.OK)
+        .json({ success: true, data: { products, topProducts } });
 });
 
 /**
@@ -34,9 +40,16 @@ const getOne = asyncHandler(async (request, response, next) => {
     const { id } = request.params;
 
     const product = await Product.findById(id);
-    if (!product) return next(new ApiError(messages.NOT_FOUND('Product'), statusCodes.NOT_FOUND));
+    if (!product)
+        return next(
+            new ApiError(messages.NOT_FOUND('Product'), statusCodes.NOT_FOUND)
+        );
 
-    response.status(statusCodes.OK).json({ success: true, data: { product } });
+    const comments = await Comment.find({ post: id }).populate('user');
+
+    response
+        .status(statusCodes.OK)
+        .json({ success: true, data: { product, comments } });
 });
 
 /**
@@ -45,15 +58,23 @@ const getOne = asyncHandler(async (request, response, next) => {
  * @access Private, only ADMIN role.
  */
 const create = asyncHandler(async (request, response, next) => {
-    const { name, description, price, brand, category, countInStock } = request.body;
+    const { name, description, price, brand, category, countInStock } =
+        request.body;
 
     const product = { name, description, price, brand, category, countInStock };
 
     const createdProduct = await Product.create(product);
     if (!createdProduct)
-        return next(new ApiError(messages.NOT_CREATED('Product'), statusCodes.INTERNAL_ERROR));
+        return next(
+            new ApiError(
+                messages.NOT_CREATED('Product'),
+                statusCodes.INTERNAL_ERROR
+            )
+        );
 
-    response.status(statusCodes.CREATED).json({ success: true, data: { product: createdProduct } });
+    response
+        .status(statusCodes.CREATED)
+        .json({ success: true, data: { product: createdProduct } });
 });
 
 /**
@@ -63,10 +84,14 @@ const create = asyncHandler(async (request, response, next) => {
  */
 const updateOne = asyncHandler(async (request, response, next) => {
     const { id } = request.params;
-    const { name, description, price, brand, category, countInStock } = request.body;
+    const { name, description, price, brand, category, countInStock } =
+        request.body;
 
     const product = await Product.findById(id);
-    if (!product) return next(new ApiError(messages.NOT_FOUND('Product'), statusCodes.NOT_FOUND));
+    if (!product)
+        return next(
+            new ApiError(messages.NOT_FOUND('Product'), statusCodes.NOT_FOUND)
+        );
 
     const updatedProduct = await Product.findByIdAndUpdate(
         product._id,
@@ -81,9 +106,16 @@ const updateOne = asyncHandler(async (request, response, next) => {
         { new: true }
     );
     if (!updatedProduct)
-        return next(new ApiError(messages.NOT_UPDATED('Product'), statusCodes.INTERNAL_ERROR));
+        return next(
+            new ApiError(
+                messages.NOT_UPDATED('Product'),
+                statusCodes.INTERNAL_ERROR
+            )
+        );
 
-    response.status(statusCodes.CREATED).json({ success: true, data: { product: updatedProduct } });
+    response
+        .status(statusCodes.CREATED)
+        .json({ success: true, data: { product: updatedProduct } });
 });
 
 /**
@@ -95,11 +127,16 @@ const deleteOne = asyncHandler(async (request, response, next) => {
     const { id } = request.params;
 
     const product = await Product.findById(id);
-    if (!product) return next(new ApiError(messages.NOT_FOUND('Product'), statusCodes.NOT_FOUND));
+    if (!product)
+        return next(
+            new ApiError(messages.NOT_FOUND('Product'), statusCodes.NOT_FOUND)
+        );
 
     const deleted = await Product.findByIdAndDelete(product._id);
 
-    response.status(statusCodes.OK).json({ success: true, data: { product: deleted } });
+    response
+        .status(statusCodes.OK)
+        .json({ success: true, data: { product: deleted } });
 });
 
 /**
@@ -111,18 +148,28 @@ const uploadPhoto = asyncHandler(async (request, response, next) => {
     const { id } = request.params;
 
     if (!request.files) {
-        next(new ApiError('The picture should be added!', statusCodes.BAD_REQUEST));
+        next(
+            new ApiError(
+                'The picture should be added!',
+                statusCodes.BAD_REQUEST
+            )
+        );
         return;
     }
 
     const { file } = request.files;
     if (!file) {
-        next(new ApiError('The photo should be added!', statusCodes.BAD_REQUEST));
+        next(
+            new ApiError('The photo should be added!', statusCodes.BAD_REQUEST)
+        );
         return;
     }
 
     const product = await Product.findById(id);
-    if (!product) return next(new ApiError(messages.NOT_FOUND('Product'), statusCodes.NOT_FOUND));
+    if (!product)
+        return next(
+            new ApiError(messages.NOT_FOUND('Product'), statusCodes.NOT_FOUND)
+        );
 
     const filename = `${product._id}_${file.name.split(' ').join('_')}`;
     const mimetype = file.mimetype.split('/').pop();
@@ -141,8 +188,6 @@ const uploadPhoto = asyncHandler(async (request, response, next) => {
             ? `${request.protocol}://${request.hostname}:${process.env.NODE_PORT}/products/${filename}`
             : `${request.protocol}://${request.hostname}/products/${filename}`;
 
-    console.log(fileUrl, filePath, filename);
-
     const updatedProduct = await Product.findByIdAndUpdate(
         product._id,
         {
@@ -153,8 +198,43 @@ const uploadPhoto = asyncHandler(async (request, response, next) => {
         { new: true }
     );
 
-    response.status(statusCodes.CREATED).json({ success: true, data: { product: updatedProduct } });
+    response
+        .status(statusCodes.CREATED)
+        .json({ success: true, data: { product: updatedProduct } });
+});
+
+/**
+ * @description Create comment.
+ * @route POST /api/products/:id/comment
+ * @access Private.
+ */
+const createComment = asyncHandler(async (request, response, next) => {
+    const { user, text } = request.body;
+    const { id } = request.params;
+
+    const comment = await Comment.create({ post: id, user, text });
+    if (!comment) {
+        next(
+            new ApiError(
+                messages.NOT_CREATED('Comment'),
+                statusCodes.INTERNAL_ERROR
+            )
+        );
+        return;
+    }
+
+    response
+        .status(statusCodes.CREATED)
+        .json({ success: true, data: { comment } });
 });
 
 // Exports.
-module.exports = { getAll, getOne, create, updateOne, deleteOne, uploadPhoto };
+module.exports = {
+    getAll,
+    getOne,
+    create,
+    updateOne,
+    deleteOne,
+    uploadPhoto,
+    createComment,
+};

@@ -10,17 +10,15 @@ const { statusCodes, messages } = require('../configs');
  * @access Public.
  */
 const register = asyncHandler(async (request, response, next) => {
-    const { email, password, name } = request.body;
+    const { email, password, name, address } = request.body;
 
-    const userExists = await User.find({ email });
-    console.log(userExists);
-
-    if (userExists.length !== 0) {
-        next(new ApiError(messages.USER_EXISTS), statusCodes.BAD_REQUEST);
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+        next(new ApiError('A user with given email already exists!', statusCodes.BAD_REQUEST));
         return;
     }
 
-    const registeredUser = await User.create({ email, password, name });
+    const registeredUser = await User.create({ email, password, name, address });
     if (!registeredUser) {
         next(new ApiError(messages.NOT_CREATED('User'), statusCodes.INTERNAL_ERROR));
         return;

@@ -11,6 +11,7 @@ const routesProducts = require('./routes/products');
 const routesUsers = require('./routes/users');
 const routesAuth = require('./routes/auth');
 const routesCategories = require('./routes/categories');
+const routesOrders = require('./routes/orders');
 
 // General middlewares.
 app.use(express.json({ limit: '20mb' }));
@@ -23,6 +24,7 @@ app.use('/api/products', routesProducts);
 app.use('/api/users', routesUsers);
 app.use('/api/auth', routesAuth);
 app.use('/api/categories', routesCategories);
+app.use('/api/orders', routesOrders);
 
 // Error handling middlewares.
 app.use(errorHandler);
